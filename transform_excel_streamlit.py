@@ -68,6 +68,85 @@
 #         st.error(f"❌ An error occurred: {e}")
 
 
+# # import streamlit as st
+# # import pandas as pd
+# # from datetime import datetime
+# # from io import BytesIO
+
+# # st.title("Excel Transformer")
+
+# # # Upload Excel file
+# # uploaded_file = st.file_uploader("📂 Upload your Excel file", type=["xlsx", "xls"])
+
+# # if uploaded_file:
+# #     try:
+# #         # Read the Excel file
+# #         df = pd.read_excel(uploaded_file)
+
+# #         # 🔥 Normalize headers (remove spaces + lowercase)
+# #         df.columns = df.columns.str.replace(r"\s+", "", regex=True).str.lower()
+
+# #         # Get current year
+# #         current_year = datetime.now().year
+
+# #         # Transform 'numero' safely (handle empty or NaN)
+# #         if "numero" in df.columns:
+# #             df["numero"] = df["numero"].apply(
+# #                 lambda x: f"CD/{current_year}/{int(x):06d}" if pd.notna(x) and x != "" else ""
+# #             )
+# #         else:
+# #             df["numero"] = ""
+
+# #         # Map columns safely
+# #         df["ligne de facture/libelé"] = df["libelle"] if "libelle" in df.columns else ""
+# #         df["ligne de facture/debit"] = df["debit"] if "debit" in df.columns else 0
+# #         df["ligne de facture/credit"] = df["credit"] if "credit" in df.columns else 0
+# #         df["ligne de facture/compte"] = df["compte"] if "compte" in df.columns else ""
+
+# #         # Fill 'journal' column by default
+# #         df["journal"] = "Caisse"
+
+# #         # Ensure 'date' and 'ref' columns exist
+# #         if "date" not in df.columns:
+# #             df["date"] = ""
+# #         if "ref" not in df.columns:
+# #             df["ref"] = ""
+
+# #         # Hide date, numero, ref if same as previous row
+# #         df.loc[df["date"] == df["date"].shift(1), ["date", "numero", "ref"]] = ""
+
+# #         # Reorder final columns
+# #         final_columns = [
+# #             "date",
+# #             "numero",
+# #             "ref",
+# #             "journal",
+# #             "ligne de facture/compte",
+# #             "ligne de facture/libelé",
+# #             "ligne de facture/debit",
+# #             "ligne de facture/credit"
+# #         ]
+# #         # Keep only existing columns to avoid errors
+# #         final_df = df[[col for col in final_columns if col in df.columns]]
+
+# #         st.success("✅ Excel transformed successfully!")
+
+# #         # Convert to Excel for download
+# #         towrite = BytesIO()
+# #         final_df.to_excel(towrite, index=False, engine='xlsxwriter')
+# #         towrite.seek(0)
+
+# #         st.download_button(
+# #             label="📥 Download Processed Excel",
+# #             data=towrite,
+# #             file_name="output_transformed.xlsx",
+# #             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+# #         )
+
+# #     except Exception as e:
+# #         st.error(f"❌ An error occurred: {e}")
+
+
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -89,7 +168,7 @@ if uploaded_file:
         # Get current year
         current_year = datetime.now().year
 
-        # Transform 'numero' safely (handle empty or NaN)
+        # Transform 'numero' safely
         if "numero" in df.columns:
             df["numero"] = df["numero"].apply(
                 lambda x: f"CD/{current_year}/{int(x):06d}" if pd.notna(x) and x != "" else ""
@@ -98,19 +177,23 @@ if uploaded_file:
             df["numero"] = ""
 
         # Map columns safely
-        df["ligne de facture/libelé"] = df["libelle"] if "libelle" in df.columns else ""
+        df["ligne de facture/libele"] = df["libele"] if "libele" in df.columns else ""
         df["ligne de facture/debit"] = df["debit"] if "debit" in df.columns else 0
         df["ligne de facture/credit"] = df["credit"] if "credit" in df.columns else 0
         df["ligne de facture/compte"] = df["compte"] if "compte" in df.columns else ""
 
+        # Keep original 'libele' column in the output
+        if "libele" in df.columns:
+            df["libele"] = df["libele"]
+        else:
+            df["libele"] = ""
+
         # Fill 'journal' column by default
         df["journal"] = "Caisse"
 
-        # Ensure 'date' and 'ref' columns exist
-        if "date" not in df.columns:
-            df["date"] = ""
-        if "ref" not in df.columns:
-            df["ref"] = ""
+        # Ensure 'date' and 'ref' columns exist and are strings
+        df["date"] = df["date"].astype(str) if "date" in df.columns else ""
+        df["ref"] = df["ref"].astype(str) if "ref" in df.columns else ""
 
         # Hide date, numero, ref if same as previous row
         df.loc[df["date"] == df["date"].shift(1), ["date", "numero", "ref"]] = ""
@@ -124,9 +207,9 @@ if uploaded_file:
             "ligne de facture/compte",
             "ligne de facture/libelé",
             "ligne de facture/debit",
-            "ligne de facture/credit"
+            "ligne de facture/credit",
+            "libele"  # original libele column
         ]
-        # Keep only existing columns to avoid errors
         final_df = df[[col for col in final_columns if col in df.columns]]
 
         st.success("✅ Excel transformed successfully!")
